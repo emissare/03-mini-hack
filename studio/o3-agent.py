@@ -5,12 +5,45 @@ from langgraph.prebuilt import tools_condition, ToolNode
 from openai import OpenAI
 import os
 from dotenv import load_dotenv
+import pandas as pd
+
+df = pd.read_csv("stack-python-answers.csv")
+
+def query_dataframe(query):
+    """Query the DataFrame using a structured Pandas filter."""
+    try:
+        result = df.query(query).to_string(index=False)
+        return result if result.strip() else "No matching results found."
+    except Exception as e:
+        return f"Error processing query: {str(e)}"
+    
+from langchain.tools import Tool
+
+csv_tool = Tool(
+    name="StackOverflow Python QA Lookup",
+    description="Queries a dataset of high-scoring Python questions and answers from Stack Overflow.",
+    func=query_dataframe
+)
 
 load_dotenv() 
 
 api_key = os.getenv("API_KEY")
 client = OpenAI(api_key=api_key)
 
+"""def stack_overflow_agent_tool(query: str):
+    # Create the agent
+    agent = create_pandas_dataframe_agent(llm, df, verbose=True, allow_dangerous_code=True)
+    # Run the agent with the provided query
+    return agent.run(query)
+
+# Register the function as a tool
+stack_overflow_tool = Tool(
+    name="Stack Overflow DataFrame Agent",
+    func=stack_overflow_agent_tool,
+    description="A tool to interact with the Stack Overflow Q&A DataFrame using natural language queries."
+)
+
+tools.append(stack_overflow_tool)"""
 
 def add(a: int, b: int) -> int:
     """Adds a and b.
@@ -21,7 +54,7 @@ def add(a: int, b: int) -> int:
     """
     return a + b
 
-tools = [add]
+tools = [add, query_dataframe]
 
 llm = ChatOpenAI(
     model="o3-mini",
