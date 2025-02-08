@@ -3,10 +3,11 @@ from fastapi import FastAPI, Request
 from fastapi.responses import HTMLResponse, JSONResponse
 import requests
 import uvicorn
+from langgraph_sdk import get_client
 
 app = FastAPI()
 
-LANGSTUDIO_URL = "http://localhost:8001/"  # Adjust as needed
+LANGSTUDIO_URL = "http://localhost:8080/"  # Adjust as needed
 
 
 HTML_TEMPLATE = """
@@ -103,22 +104,39 @@ async def index():
     return HTML_TEMPLATE
 
 
+client = get_client(url=LANGSTUDIO_URL)
+
+
 @app.post("/chat")
 async def chat(request: Request):
     data = await request.json()
     query = data.get("query", "")
-    # Send the query to the local LangStudio instance
-    # response = requests.get(LANGSTUDIO_URL)
-    # print(response.content)
-    # print(response.json())
-    print(f"Query: {query}")
+    # # Send the query to the local LangStudio instance
+    # # response = requests.get(LANGSTUDIO_URL)
+    # # print(response.content)
+    # # print(response.json())
+    # print(f"Query: {query}")
 
-    # ls_response = requests.post(LANGSTUDIO_URL, json={"query": query}).json()
-    # return JSONResponse({"response": ls_response.get("response", "")})
-    result = send_query_to_langstudio(query)
-    if result:
-        return {"response": result.get("response", result)}
-    return {"response": "error"}
+    # # ls_response = requests.post(LANGSTUDIO_URL, json={"query": query}).json()
+    # # return JSONResponse({"response": ls_response.get("response", "")})
+    # result = send_query_to_langstudio(query)
+    # if result:
+    #     return {"response": result.get("response", result)}
+    # return {"response": "error"}
+
+    result = client.runs.complete(
+        None,  # Threadless run
+        "o3-agent.py",  # Name of assistant defined in langgraph.json
+        input={
+            "messages": [
+                {
+                    "role": "human",
+                    "content": query,
+                }
+            ],
+        },
+    )
+    return {"response": result}
 
 
 if __name__ == "__main__":
