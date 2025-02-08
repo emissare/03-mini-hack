@@ -53,6 +53,37 @@ HTML_TEMPLATE = """
 """
 
 
+def send_query_to_langstudio(query):
+    # Replace with your LangStudio API endpoint URL
+    # l   url = "https://your-langstudio-instance.com/api/query"
+
+    # Prepare the request headers and payload
+    headers = {
+        "Content-Type": "application/json",
+        # If authentication is needed, add a line like:
+        # "Authorization": "Bearer YOUR_API_TOKEN"
+    }
+
+    payload = {
+        "query": query
+        # Include any additional parameters, such as context or session info, if required
+    }
+
+    try:
+        # Send the POST request with the query payload
+        response = requests.post(LANGSTUDIO_URL, json=payload, headers=headers)
+        response.raise_for_status()  # Raises an HTTPError for bad responses (4xx or 5xx)
+
+        # Process and return the JSON response from LangStudio
+        data = response.json()
+        return data
+
+    except requests.RequestException as e:
+        # Handle request exceptions (e.g., network issues or bad responses)
+        print("An error occurred:", e)
+        return None
+
+
 @app.get("/", response_class=HTMLResponse)
 async def index():
     return HTML_TEMPLATE
@@ -67,8 +98,12 @@ async def chat(request: Request):
     # print(response.content)
     # print(response.json())
 
-    ls_response = requests.post(LANGSTUDIO_URL, json={"query": query}).json()
-    return JSONResponse({"response": ls_response.get("response", "")})
+    # ls_response = requests.post(LANGSTUDIO_URL, json={"query": query}).json()
+    # return JSONResponse({"response": ls_response.get("response", "")})
+    result = send_query_to_langstudio(query)
+    if result:
+        return ("response:", result)
+    return {"response": "error"}
 
 
 if __name__ == "__main__":
