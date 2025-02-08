@@ -1,5 +1,16 @@
 from openai import OpenAI
-client = OpenAI()
+import os
+from dotenv import load_dotenv
+
+load_dotenv() 
+
+api_key = os.getenv("API_KEY")
+client = OpenAI(api_key=api_key) 
+
+
+    
+
+
 
 response = client.chat.completions.create(
   model="o3-mini",
@@ -37,3 +48,6 @@ response = client.chat.completions.create(
   },
   reasoning_effort="high"
 )
+
+
+print(response)
