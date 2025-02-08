@@ -11,3 +11,5 @@ wikipedia
 trustcall
 langgraph-cli
 trustcall
+chromadb
+pandas
