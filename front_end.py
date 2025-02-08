@@ -17,17 +17,26 @@ HTML_TEMPLATE = """
   <title>Professor Snake</title>
   <script>
     function sendQuery(){
-      const query = document.getElementById("query").value;
-      fetch('/chat', {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ query: query })
-      })
-      .then(response => response.json())
-      .then(data => {
-          document.getElementById("response").value = data.response;
-      })
-      .catch(error => console.error('Error:', error));
+    const queryElement = document.getElementById("query");
+    const responseElement = document.getElementById("response");
+    const query = queryElement.value;
+
+    // Notify the user that the request is being processed
+    responseElement.value = "Processing...";
+
+    fetch('/chat', {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ query: query })
+    })
+    .then(response => response.json())
+    .then(data => {
+        responseElement.value = data.response;
+    })
+    .catch(error => {
+        console.error('Error:', error);
+        responseElement.value = "An error occurred.";
+    });
     }
   
     document.addEventListener("DOMContentLoaded", function(){
@@ -71,13 +80,18 @@ def send_query_to_langstudio(query):
 
     try:
         # Send the POST request with the query payload
-        response = requests.post(LANGSTUDIO_URL, json=payload, headers=headers)
+        response = requests.post(
+            LANGSTUDIO_URL, json=payload, headers=headers, timeout=5
+        )
         response.raise_for_status()  # Raises an HTTPError for bad responses (4xx or 5xx)
 
         # Process and return the JSON response from LangStudio
         data = response.json()
         return data
 
+    except requests.exceptions.Timeout as e:
+        print("The request timed out:", e)
+        return None
     except requests.RequestException as e:
         # Handle request exceptions (e.g., network issues or bad responses)
         print("An error occurred:", e)
@@ -97,12 +111,13 @@ async def chat(request: Request):
     # response = requests.get(LANGSTUDIO_URL)
     # print(response.content)
     # print(response.json())
+    print(f"Query: {query}")
 
     # ls_response = requests.post(LANGSTUDIO_URL, json={"query": query}).json()
     # return JSONResponse({"response": ls_response.get("response", "")})
     result = send_query_to_langstudio(query)
     if result:
-        return ("response:", result)
+        return {"response": result.get("response", result)}
     return {"response": "error"}
 
 
